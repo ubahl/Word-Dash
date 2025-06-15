@@ -10,9 +10,54 @@ import Messages
 
 class MessagesViewController: MSMessagesAppViewController {
     
+    let textField = UITextField()
+    let sendButton = UIButton(type: .system)
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        
+        textField.placeholder = "Type your message..."
+        textField.borderStyle = .roundedRect
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        
+        sendButton.setTitle("Send", for: .normal)
+        sendButton.translatesAutoresizingMaskIntoConstraints = false
+        sendButton.addTarget(self, action: #selector(sendTapped), for: .touchUpInside)
+        
+        view.addSubview(textField)
+        view.addSubview(sendButton)
+        
+        NSLayoutConstraint.activate([
+            textField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            textField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            textField.topAnchor.constraint(equalTo: view.topAnchor, constant: 40),
+            textField.heightAnchor.constraint(equalToConstant: 40),
+
+            sendButton.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 20),
+            sendButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+        ])
+        
+    }
+
+    @objc func sendTapped() {
+        guard let conversation = activeConversation else { return }
+        let userText = textField.text ?? ""
+
+        // Create layout
+        let layout = MSMessageTemplateLayout()
+        layout.caption = userText
+
+        // Create message
+        let message = MSMessage()
+        message.layout = layout
+
+        // Insert message into the conversation
+        conversation.insert(message) { error in
+            if let error = error {
+                print("Error sending message: \(error.localizedDescription)")
+            }
+        }
     }
     
     // MARK: - Conversation Handling
