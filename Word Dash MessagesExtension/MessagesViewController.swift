@@ -10,54 +10,78 @@ import Messages
 
 class MessagesViewController: MSMessagesAppViewController {
     
-    let textField = UITextField()
-    let sendButton = UIButton(type: .system)
+    let playButton = UIButton(type: .system)
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
         
-        textField.placeholder = "Type your message..."
-        textField.borderStyle = .roundedRect
-        textField.translatesAutoresizingMaskIntoConstraints = false
-        
-        sendButton.setTitle("Send", for: .normal)
-        sendButton.translatesAutoresizingMaskIntoConstraints = false
-        sendButton.addTarget(self, action: #selector(sendTapped), for: .touchUpInside)
-        
-        view.addSubview(textField)
-        view.addSubview(sendButton)
+        // Setup play button
+        playButton.setTitle("Play Game", for: .normal)
+        playButton.titleLabel?.font = .boldSystemFont(ofSize: 20)
+        playButton.translatesAutoresizingMaskIntoConstraints = false
+        playButton.addTarget(self, action: #selector(playGameTapped), for: .touchUpInside)
+
+        view.addSubview(playButton)
         
         NSLayoutConstraint.activate([
-            textField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            textField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            textField.topAnchor.constraint(equalTo: view.topAnchor, constant: 40),
-            textField.heightAnchor.constraint(equalToConstant: 40),
-
-            sendButton.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 20),
-            sendButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            playButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            playButton.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
         
     }
-
-    @objc func sendTapped() {
+    
+    @objc func playGameTapped() {
         guard let conversation = activeConversation else { return }
-        let userText = textField.text ?? ""
 
-        // Create layout
+        // Optionally attach a custom URL with game state (encoded later)
+        var components = URLComponents()
+        components.queryItems = [
+            URLQueryItem(name: "game", value: "new")
+        ]
+
         let layout = MSMessageTemplateLayout()
-        layout.caption = userText
+        layout.caption = "Let's play Word Dash!"
 
-        // Create message
-        let message = MSMessage()
+        let message = MSMessage(session: conversation.selectedMessage?.session ?? MSSession())
         message.layout = layout
+        message.url = components.url
 
-        // Insert message into the conversation
         conversation.insert(message) { error in
             if let error = error {
-                print("Error sending message: \(error.localizedDescription)")
+                print("Failed to insert message: \(error)")
             }
         }
+    }
+    
+    override func didBecomeActive(with conversation: MSConversation) {
+        super.didBecomeActive(with: conversation)
+
+        guard presentationStyle == .expanded else { return }
+
+        if let url = conversation.selectedMessage?.url,
+           let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+           let gameQuery = components.queryItems?.first(where: { $0.name == "game" })?.value,
+           gameQuery == "new" {
+            // Show your word grid
+            print("game")
+            
+            playButton.removeFromSuperview()
+            
+            let label = UILabel()
+            label.text = "Word Dash Started!"
+            label.textColor = .black
+            label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            label.textAlignment = .center
+
+            view.addSubview(label)
+
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            ])
+        }
+    
     }
     
     // MARK: - Conversation Handling
